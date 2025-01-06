@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@android:id/background"
+        android:height="40dp"
+        android:bottom="0dp"
+        android:top="0dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/white"/>
+            <corners android:radius="20dp"/>
+        </shape>
+    </item>
+
+    <item
+        android:id="@android:id/progress"
+        android:height="30dp"
+        android:bottom="5dp"
+        android:top="5dp"
+        android:left="5dp"
+        android:right="5dp">
+
+        <clip
+            android:clipOrientation="horizontal"
+            android:gravity="left">
+            <shape android:shape="rectangle">
+                <solid android:color="@color/cozy_green"/>
+                <corners android:radius="15dp"/>
+            </shape>
+        </clip>
+
+    </item>
+</layer-list>
