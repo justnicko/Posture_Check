@@ -15,10 +15,11 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    Switch timerSwitch, frontCameraSwitch;
+    Switch timerSwitch, frontCameraSwitch, elbowTrackSwitch;
     SeekBar timerSeekbar, angleSeekbar;
     static Boolean usingFrontCamera = true;
-    static int possibleAngleDifference = 10;
+    static Boolean trackingElbows = true;
+    static int possibleAngleDifference = 20;
     static int breakAlarmTimerInterval = 3*1000*60*10;
 
     @Override
@@ -37,6 +38,16 @@ public class SettingsActivity extends AppCompatActivity {
         angleSeekbar.setProgress(possibleAngleDifference/10 - 1);
         timerSeekbar.setProgress(breakAlarmTimerInterval/1000/60/10 - 1);
         frontCameraSwitch = findViewById(R.id.switch_front_camera);
+        elbowTrackSwitch = findViewById(R.id.switch_elbow_track);
+
+
+        elbowTrackSwitch.setChecked(trackingElbows);
+        elbowTrackSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                trackingElbows = elbowTrackSwitch.isChecked();
+            }
+        });
 
         frontCameraSwitch.setChecked(usingFrontCamera);
         frontCameraSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

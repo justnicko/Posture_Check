@@ -133,8 +133,8 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
                                             };
 
                                             anglesToDraw = new int[][] {
-                                                    {lmsToCheck[0], lmsToCheck[1], lmsToCheck[4], 140},
-                                                    {lmsToCheck[1], lmsToCheck[2], lmsToCheck[3], 95},
+                                                    {lmsToCheck[0], lmsToCheck[1], lmsToCheck[4], 155},
+                                                    {lmsToCheck[1], lmsToCheck[2], lmsToCheck[3], SettingsActivity.trackingElbows? 95 : -1},
                                                     {lmsToCheck[1], lmsToCheck[4], lmsToCheck[5], 100},
                                                     {lmsToCheck[6], lmsToCheck[5], lmsToCheck[4], 95}
                                             };
@@ -157,8 +157,8 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
 
 
                                             MathVector v = new MathVector(
-                                                    new Point3D(pose.getPoseLandmark(lmsToCheck[4]).getPosition3D()),
-                                                    new Point3D(pose.getPoseLandmark(lmsToCheck[5]).getPosition3D())
+                                                    new Point3D(pose.getPoseLandmark(lmsToCheck[turnedLeft? 5 : 4]).getPosition3D()),
+                                                    new Point3D(pose.getPoseLandmark(lmsToCheck[turnedLeft? 4 : 5]).getPosition3D())
                                             );
                                             MathVector.OrientationZ = v.ZRotation();
 
@@ -175,14 +175,14 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
 
                                             for (int i = 0; i < 4; i++) {
                                                 int[] corner_lms = anglesToDraw[i];
-                                                Point3D p1 = new Point3D(pose.getPoseLandmark(corner_lms[0]).getPosition3D());
+                                                Point3D p1 = new Point3D(pose.getPoseLandmark(corner_lms[turnedLeft ? 2 : 0]).getPosition3D());
                                                 Point3D p2 = new Point3D(pose.getPoseLandmark(corner_lms[1]).getPosition3D());
-                                                Point3D p3 = new Point3D(pose.getPoseLandmark(corner_lms[2]).getPosition3D());
+                                                Point3D p3 = new Point3D(pose.getPoseLandmark(corner_lms[turnedLeft ? 0 : 2]).getPosition3D());
                                                 MathVector v1 = new MathVector(p2,p1);
                                                 MathVector v2 = new MathVector(p2,p3);
                                                 float angle = Math.round(v1.vectorsAngle(v2));
-                                                float difference = Math.abs(corner_lms[3] - angle);
-                                                if (difference >= SettingsActivity.possibleAngleDifference) {
+                                                float difference = corner_lms[3] != -1 ? corner_lms[3] - angle : 0;
+                                                if (Math.abs(difference) >= SettingsActivity.possibleAngleDifference) {
                                                     badPosture = true;
                                                 }
                                                 anglesAnalyzed.add(Math.max(Math.min(corner_lms[3] - angle,30),-30));
@@ -194,7 +194,11 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
                                                 buf.setColor(Color.BLACK);
                                                 canvas.drawArc(p2.x - b, p2.y - a, p2.x + b, p2.y + a, v1.vectorAngle(),angle,true,buf);
                                                 buf.setStrokeWidth(7);
-                                                buf.setColor((int)argbEvaluator.evaluate(Math.min(1, difference / (float) SettingsActivity.possibleAngleDifference),Color.GREEN,Color.RED));
+                                                if (corner_lms[3] != -1) {
+                                                    buf.setColor((int)argbEvaluator.evaluate(Math.min(1, Math.abs(difference) / (float) SettingsActivity.possibleAngleDifference),Color.GREEN,Color.RED));
+                                                } else {
+                                                    buf.setColor(Color.WHITE);
+                                                }
                                                 canvas.drawArc(p2.x - b, p2.y - a, p2.x + b, p2.y + a, v1.vectorAngle(),angle,true,buf);
                                                 buf.setColor(Color.BLACK);
                                                 buf.setStyle(Paint.Style.FILL_AND_STROKE);

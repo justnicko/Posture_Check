@@ -26,6 +26,7 @@ public class AngleData {
         lineDataSet.setColor(Color.GREEN);
         lineDataSet.setLineWidth(10f);
         lineDataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
+        lineDataSet.setDrawCircles(false);
         LineData lineData = new LineData(lineDataSet);
         lineData.setDrawValues(false);
         return lineData;

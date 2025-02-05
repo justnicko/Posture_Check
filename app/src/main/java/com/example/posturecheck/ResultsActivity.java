@@ -6,6 +6,7 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Shader;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -96,7 +97,9 @@ public class ResultsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 angleSelected = Math.max(0,Math.min(angleSelected - 1,3));
+                angleSelected = (!SettingsActivity.trackingElbows && angleSelected == 1)? 0 : angleSelected;
                 angleSelect(angleSelected);
+                Log.i("ang",String.valueOf(angleSelected));
             }
         });
 
@@ -104,7 +107,9 @@ public class ResultsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 angleSelected = Math.max(0,Math.min(angleSelected + 1,3));
+                angleSelected = (!SettingsActivity.trackingElbows && angleSelected == 1)? 2 : angleSelected;
                 angleSelect(angleSelected);
+                Log.i("ang",String.valueOf(angleSelected));
             }
         });
 
@@ -121,7 +126,7 @@ public class ResultsActivity extends AppCompatActivity {
 
     }
     public void angleSelect(int angleId) {
-        if (MainActivity.trackTime >= 12) {
+        if (MainActivity.trackTime >= 30) {
             descView.setText(angleDescriptions[angleId]);
             LineData angleData = AngleData.getAngleData(angleId);
             lineChart.notifyDataSetChanged();
