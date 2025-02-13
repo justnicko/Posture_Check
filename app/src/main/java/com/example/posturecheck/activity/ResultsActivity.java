@@ -1,4 +1,4 @@
-package com.example.posturecheck;
+package com.example.posturecheck.activity;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -20,6 +20,8 @@ import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
+import com.example.posturecheck.util.AngleData;
+import com.example.posturecheck.R;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
@@ -99,7 +101,6 @@ public class ResultsActivity extends AppCompatActivity {
                 angleSelected = Math.max(0,Math.min(angleSelected - 1,3));
                 angleSelected = (!SettingsActivity.trackingElbows && angleSelected == 1)? 0 : angleSelected;
                 angleSelect(angleSelected);
-                Log.i("ang",String.valueOf(angleSelected));
             }
         });
 
@@ -109,7 +110,6 @@ public class ResultsActivity extends AppCompatActivity {
                 angleSelected = Math.max(0,Math.min(angleSelected + 1,3));
                 angleSelected = (!SettingsActivity.trackingElbows && angleSelected == 1)? 2 : angleSelected;
                 angleSelect(angleSelected);
-                Log.i("ang",String.valueOf(angleSelected));
             }
         });
 

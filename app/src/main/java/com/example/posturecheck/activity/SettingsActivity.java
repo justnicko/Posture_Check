@@ -1,4 +1,4 @@
-package com.example.posturecheck;
+package com.example.posturecheck.activity;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,14 +13,16 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.posturecheck.R;
+
 public class SettingsActivity extends AppCompatActivity {
 
     Switch timerSwitch, frontCameraSwitch, elbowTrackSwitch;
     SeekBar timerSeekbar, angleSeekbar;
-    static Boolean usingFrontCamera = true;
-    static Boolean trackingElbows = true;
-    static int possibleAngleDifference = 20;
-    static int breakAlarmTimerInterval = 3*1000*60*10;
+    public static Boolean usingFrontCamera = true;
+    public static Boolean trackingElbows = true;
+    public static int possibleAngleDifference = 20;
+    public static int breakAlarmTimerInterval = 3*1000*60*10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

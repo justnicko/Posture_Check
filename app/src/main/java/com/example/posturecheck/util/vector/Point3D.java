@@ -1,9 +1,9 @@
-package com.example.posturecheck;
+package com.example.posturecheck.util.vector;
 
 import com.google.mlkit.vision.common.PointF3D;
 
 public class Point3D {
-    float x, y, z;
+    public float x, y, z;
 
     public Point3D(int x, int y, int z) {
         this.x = x;

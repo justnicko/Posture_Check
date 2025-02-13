@@ -1,4 +1,4 @@
-package com.example.posturecheck;
+package com.example.posturecheck.activity;
 
 import android.content.Context;
 import android.content.Intent;
@@ -7,8 +7,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -16,7 +16,6 @@ import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.view.PreviewView;
@@ -30,15 +29,17 @@ import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.lifecycle.LifecycleOwner;
 
+import com.example.posturecheck.widget.Display;
+import com.example.posturecheck.util.MainActivityHandler;
+import com.example.posturecheck.util.PostureAnalyzer;
+import com.example.posturecheck.R;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.pose.PoseDetection;
 import com.google.mlkit.vision.pose.PoseDetector;
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends AppCompatActivity {
@@ -56,17 +57,15 @@ public class MainActivity extends AppCompatActivity {
     Display display;
     TextView timeView;
     ImageButton pause_btn;
-    static int trackTime = 0;
+    public static int trackTime = 0;
     int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
             | View.SYSTEM_UI_FLAG_FULLSCREEN;
 
     ImageAnalysis.Analyzer imageAnalyzer;
-    MainAppHandler h;
-    Runnable timeIncrement, angleDataUpdate, wrongPostureMessage, checkAngleDifference, breakAlarm;
-    Map<Runnable,Integer> runnables = new HashMap<>();
+    MainActivityHandler h;
+
     long millisFromStart;
     static boolean pendingWrongPostureMessage = false;
-    MediaPlayer notificationSound, alarmSound;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,68 +116,7 @@ public class MainActivity extends AppCompatActivity {
             pause_btn.setImageResource(R.drawable.play);
         }
 
-        h = MainAppHandler.getMainAppHandler();
-        timeIncrement = new Runnable() {
-
-            @Override
-            public void run() {
-                if (PostureAnalyzer.anglesAnalyzed != null && !PostureAnalyzer.anglesAnalyzed.isEmpty() ) {
-                    timeTextViewUpdate();
-                    trackTime++;
-                }
-                h.postDelayed(this, 1000);
-            }
-        };
-
-        angleDataUpdate = new Runnable() {
-
-            @Override
-            public void run() {
-                AngleData.updateAngleData();
-                h.postDelayed(this, 1000);
-            }
-        };
-        runnables.put(angleDataUpdate, 1000);
-
-        wrongPostureMessage = new Runnable() {
-            @Override
-            public void run() {
-                if (notificationSound == null) {
-                    notificationSound = MediaPlayer.create(MainActivity.this, R.raw.notification);
-                }
-                notificationSound.start();
-                pendingWrongPostureMessage = false;
-            }
-        };
-
-        checkAngleDifference = new Runnable() {
-            @Override
-            public void run() {
-                if (PostureAnalyzer.badPosture && !pendingWrongPostureMessage) {
-                    MainAppHandler.getMainAppHandler().postDelayed(wrongPostureMessage,10000);
-                    pendingWrongPostureMessage = true;
-                } else if (!PostureAnalyzer.badPosture && pendingWrongPostureMessage) {
-                    MainAppHandler.getMainAppHandler().removeCallbacks(wrongPostureMessage);
-                    pendingWrongPostureMessage = false;
-                }
-                MainAppHandler.getMainAppHandler().postDelayed(this,1000);
-            }
-        };
-
-        breakAlarm = new Runnable() {
-            @Override
-            public void run() {
-                if (alarmSound == null) {
-                    alarmSound = MediaPlayer.create(MainActivity.this, R.raw.alarm);
-                }
-                alarmSound.start();
-                MainAppHandler.getMainAppHandler().postDelayed(this,4000);
-            }
-        };
-        runnables.put(breakAlarm, SettingsActivity.breakAlarmTimerInterval);
-
-        runnables.put(timeIncrement, 1000);
-        runnables.put(checkAngleDifference, 1000);
+        h = MainActivityHandler.getMainActivityHandler(this);
 
         pause_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -186,11 +124,11 @@ public class MainActivity extends AppCompatActivity {
                 PostureAnalyzer.pauseToggle();
                 if (PostureAnalyzer.paused) {
                     pause_btn.setImageResource(R.drawable.pause);
-                    h.removeAll(runnables);
+                    h.removeAll();
                     PostureAnalyzer.badPosture = false;
                 } else {
                     pause_btn.setImageResource(R.drawable.play);
-                    h.postDelayedAll(runnables);
+                    h.postDelayedAll();
                 }
             }
         });
@@ -198,19 +136,20 @@ public class MainActivity extends AppCompatActivity {
         if (PostureAnalyzer.paused) {
             pause_btn.setImageResource(R.drawable.pause);
         } else {
-            h.postDelayedAll(runnables);
+            h.postDelayedAll();
             pause_btn.setImageResource(R.drawable.play);
         }
 
         imageAnalyzer = new PostureAnalyzer(display);
         timeTextViewUpdate();
     }
-    void timeTextViewUpdate() {
+    public void timeTextViewUpdate() {
         int seconds = trackTime;
         int minutes = seconds / 60;
         int hours = minutes / 60;
         seconds = seconds % 60;
         minutes = minutes % 60;
+        Log.d("tracktime",String.format("%d:%02d:%02d", hours, minutes, seconds));
         timeView.setText(String.format("%d:%02d:%02d", hours, minutes, seconds));
     }
 
@@ -220,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
         if (!PostureAnalyzer.paused) {
             PostureAnalyzer.pauseToggle();
         }
-        h.removeAll(runnables);
+        h.removeAll();
     }
 
     @Override
@@ -231,11 +170,13 @@ public class MainActivity extends AppCompatActivity {
     public void startResultsActivity(View v) {
         Intent intent = new Intent(this, ResultsActivity.class);
         startActivity(intent);
+        h.removeAll();
     }
 
     public void startSettingsActivity(View v) {
         Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
+        h.removeAll();
     }
 
     void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {

@@ -6,9 +6,9 @@
     android:background="@color/background_light"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".activity.MainActivity">
 
-    <com.example.posturecheck.Display
+    <com.example.posturecheck.widget.Display
         android:id="@+id/displayOverlay"
         android:layout_width="0dp"
         android:layout_height="0dp"

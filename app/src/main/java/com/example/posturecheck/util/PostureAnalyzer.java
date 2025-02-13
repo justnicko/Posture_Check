@@ -1,4 +1,4 @@
-package com.example.posturecheck;
+package com.example.posturecheck.util;
 
 import android.animation.ArgbEvaluator;
 import android.graphics.Bitmap;
@@ -7,9 +7,10 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Typeface;
 import android.media.Image;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.OptIn;
@@ -17,6 +18,10 @@ import androidx.camera.core.ExperimentalGetImage;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
+import com.example.posturecheck.activity.SettingsActivity;
+import com.example.posturecheck.util.vector.MathVector;
+import com.example.posturecheck.util.vector.Point3D;
+import com.example.posturecheck.widget.Display;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -37,10 +42,11 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
                     .setDetectorMode(PoseDetectorOptions.STREAM_MODE)
                     .build();
     PoseDetector poseDetector = PoseDetection.getClient(options);
-    Canvas canvas;
+    Canvas canvas, maskCanvas;
     Display display;
     Paint mPaint = new Paint();
-    static Boolean paused = true;
+    Paint maskPaint;
+    public static Boolean paused = true;
 
     int[] lmsToCheck_r = {
             PoseLandmark.RIGHT_EAR,
@@ -68,12 +74,17 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
 
     int[][] anglesToDraw;
 
-    static boolean badPosture = false;
+    public static boolean badPosture = false;
     ArgbEvaluator argbEvaluator = new ArgbEvaluator();
     public static ArrayList<Float> anglesAnalyzed;
 
     boolean turnedLeft;
+    Bitmap bitmap, maskBitmap, bufferBitmap, rotatedBitmap;
 
+    public void clearMask(Canvas maskCanvas) {
+        mPaint.setColor(Color.WHITE);
+        maskCanvas.drawRect(0,0,maskCanvas.getWidth(),maskCanvas.getHeight(),mPaint);
+    }
     public PostureAnalyzer(Display display) {
         super();
         this.display = display;
@@ -85,6 +96,8 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
         mPaint.setStyle(Paint.Style.FILL);
         mPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         mPaint.setStrokeCap(Paint.Cap.ROUND);
+        maskPaint = new Paint();
+        maskPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
     }
 
     public static void pauseToggle() {
@@ -98,7 +111,8 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
         ByteBuffer byteBuffer = imageProxy.getImage().getPlanes()[0].getBuffer();
         byteBuffer.rewind();
 
-        Bitmap bitmap = Bitmap.createBitmap(imageProxy.getWidth(), imageProxy.getHeight(), Bitmap.Config.ARGB_8888);
+        bitmap = bitmap == null ? Bitmap.createBitmap(imageProxy.getWidth(), imageProxy.getHeight(), Bitmap.Config.ARGB_8888) : bitmap;
+
         bitmap.copyPixelsFromBuffer(byteBuffer);
 
         Matrix matrix = new Matrix();
@@ -108,21 +122,34 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
         } else {
             matrix.postRotate(90);
         }
-        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap,0,0,imageProxy.getWidth(),imageProxy.getHeight(), matrix, false);
+        rotatedBitmap = Bitmap.createBitmap(bitmap,0,0,imageProxy.getWidth(),imageProxy.getHeight(), matrix, false);
+
+        if (bufferBitmap == null) {
+            bufferBitmap = Bitmap.createBitmap(rotatedBitmap.getWidth(), rotatedBitmap.getHeight(), Bitmap.Config.ARGB_8888);
+            maskBitmap = bufferBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        } else {
+            bufferBitmap.eraseColor(Color.TRANSPARENT);
+        }
+
+
+        canvas = new Canvas(rotatedBitmap);
+        maskCanvas = new Canvas(maskBitmap);
+        Canvas bufferCanvas = new Canvas(bufferBitmap);
+        bufferCanvas.drawBitmap(rotatedBitmap,0,0, null);
+        bufferCanvas.drawBitmap(maskBitmap, 0, 0, maskPaint);
 
         Image mediaImage = imageProxy.getImage();
         if (rotatedBitmap != null && !paused) {
-            InputImage image = InputImage.fromBitmap(rotatedBitmap, 0);
+            InputImage image = InputImage.fromBitmap(bufferBitmap, 0);
             Task<Pose> result =
                     poseDetector.process(image)
                             .addOnSuccessListener(
                                     new OnSuccessListener<Pose>() {
                                         @Override
                                         public void onSuccess(Pose pose) {
+                                            maskBitmap.eraseColor(Color.TRANSPARENT);
                                             badPosture = false;
                                             anglesAnalyzed = new ArrayList<>();
-                                            canvas = new Canvas(rotatedBitmap);
-
                                             lmsToJoin = new int[][] {
                                                     {lmsToCheck[0], lmsToCheck[1]},
                                                     {lmsToCheck[1], lmsToCheck[2]},
@@ -142,6 +169,7 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
                                             for (int[] lm_index : lmsToJoin) {
                                                 if (pose.getPoseLandmark(lm_index[0]) == null || pose.getPoseLandmark(lm_index[0]).getInFrameLikelihood() < 0.5) {
                                                     canvas.drawText("Не всі частини тіла в межах камери",canvas.getWidth()/2,canvas.getHeight()/2, mPaint);
+                                                    clearMask(maskCanvas);
                                                     return;
                                                 }
                                             }
@@ -171,6 +199,8 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
                                                 buf.setStrokeWidth(10);
                                                 canvas.drawLine(p1.x,p1.y,p2.x,p2.y,buf);
                                                 canvas.drawLine(p1.x,p1.y,p2.x,p2.y,mPaint);
+                                                buf.setStrokeWidth(150);
+                                                maskCanvas.drawLine(p1.x,p1.y,p2.x,p2.y,buf);
                                             }
 
                                             for (int i = 0; i < 4; i++) {
@@ -209,6 +239,11 @@ public class PostureAnalyzer implements ImageAnalysis.Analyzer {
                                                 canvas.drawText(String.valueOf(angle),p2.x,p2.y,buf);
                                             }
 
+                                            Paint buf = new Paint(mPaint);
+                                            buf.setColor(Color.BLACK);
+                                            buf.setAlpha(100);
+                                            canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), buf);
+                                            canvas.drawBitmap(bufferBitmap,0,0, null);
                                         }
                                     })
                             .addOnFailureListener(

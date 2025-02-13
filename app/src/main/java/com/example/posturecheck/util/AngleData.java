@@ -1,8 +1,9 @@
-package com.example.posturecheck;
+package com.example.posturecheck.util;
 
 import android.graphics.Color;
 import android.util.Log;
 
+import com.example.posturecheck.activity.MainActivity;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;

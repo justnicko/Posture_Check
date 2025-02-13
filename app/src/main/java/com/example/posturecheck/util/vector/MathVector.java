@@ -1,11 +1,6 @@
-package com.example.posturecheck;
+package com.example.posturecheck.util.vector;
 
-import android.graphics.PointF;
 import android.util.Log;
-
-import com.google.mlkit.vision.common.PointF3D;
-
-import java.util.Vector;
 
 public class MathVector {
     Point3D point1, point2;
@@ -22,18 +17,18 @@ public class MathVector {
         point2 = p2;
     }
 
-    float width() {
+    public float width() {
         return point2.x - point1.x;
     }
 
-    float height() {
+    public float height() {
         return point2.y - point1.y;
     }
-    float depth() {
+    public float depth() {
         return point2.z - point1.z;
     }
 
-    float length() {
+    public float length() {
         return (float) Math.sqrt(width()*width() + height()*height());
     }
 
